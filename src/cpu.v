@@ -19,8 +19,15 @@ module cpu(
     wire branch;
     wire [2:0] imm_type;
     wire [31:0] next_pc;
-    assign next_pc = (branch && alu_result) ? (pc + imm) : (pc + 4);
-    // ... 其他信号
+    wire zero;
+    assign next_pc = (branch && zero) ? (pc + imm) : (pc + 4);
+
+    // 解析指令字段
+    wire [6:0] opcode = inst[6:0];
+    wire [2:0] funct3 = inst[14:12];
+    wire [6:0] funct7 = inst[31:25];
+    // 控制信号
+    wire mem_to_reg, alu_src, reg_write;
 
     // 实例化各个子模块
     pc u_pc(
@@ -33,32 +40,35 @@ module cpu(
         .addr(pc),
         .inst(inst)
     );
+    control u_control(
+        .opcode(opcode),
+        .funct3(funct3),
+        .funct7(funct7),
+        .branch(branch),
+        .mem_read(mem_read),
+        .mem_to_reg(mem_to_reg),
+        .alu_op(alu_op),
+        .mem_write(mem_write),
+        .alu_src(alu_src),
+        .reg_write(reg_write),
+        .imm_type(imm_type)
+    );
     decoder u_decoder(
         .inst(inst),
         .imm_type(imm_type),
         .rs1(rs1),
         .rs2(rs2),
         .rd(rd),
-        .alu_op(alu_op),
-        .imm(imm),
-        .branch(branch)
+        .imm(imm)
     );
-    regfile u_regfile(
-        .clk(clk),
-        .rst(rst),
-        .rs1(rs1),
-        .rs2(rs2),
-        .rd(rd),
-        .we(reg_write_en),
-        .wdata(write_data),
-        .rdata1(reg1_data),
-        .rdata2(reg2_data)
-    );
+    // ALU第二输入选择
+    wire [31:0] alu_b = alu_src ? imm : reg2_data;
     alu u_alu(
         .op(alu_op),
         .a(reg1_data),
-        .b(reg2_data),
-        .result(alu_result)
+        .b(alu_b),
+        .result(alu_result),
+        .zero(zero)
     );
     dmem u_dmem(
         .clk(clk),
@@ -68,17 +78,18 @@ module cpu(
         .mem_read(mem_read),
         .mem_write(mem_write)
     );
-    control u_control(
-        .inst(inst),
-        .reg_write_en(reg_write_en),
-        .mem_read(mem_read),
-        .mem_write(mem_write),
-        .alu_op(alu_op),
-        .imm_type(imm_type)
-    );
     // 写回数据选择
-    assign write_data = mem_read ? mem_data : alu_result;
-    // 分支跳转逻辑（示例，假设pc模块支持外部next_pc）
-    // wire [31:0] next_pc = (branch && alu_result) ? (pc + imm) : (pc + 4);
-    // ... 其他逻辑
+    assign write_data = mem_to_reg ? mem_data : alu_result;
+    // regfile写使能
+    regfile u_regfile(
+        .clk(clk),
+        .rst(rst),
+        .rs1(rs1),
+        .rs2(rs2),
+        .rd(rd),
+        .we(reg_write),
+        .wdata(write_data),
+        .rdata1(reg1_data),
+        .rdata2(reg2_data)
+    );
 endmodule 

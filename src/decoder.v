@@ -5,17 +5,14 @@ module decoder(
     output wire [4:0] rs1,
     output wire [4:0] rs2,
     output wire [4:0] rd,
-    output wire [2:0] alu_op,
-    output reg [31:0] imm,
-    output wire branch
-    // 可根据需要添加更多输出
+    output reg [31:0] imm
 );
+//      funct7  rs2  rs1  funct3  rd  opcode7 
+// bits 5       5    5    3       5   7
     // 这里只做简单字段分解，实际可扩展
     assign rs1 = inst[19:15];
     assign rs2 = inst[24:20];
     assign rd  = inst[11:7];
-    assign alu_op = inst[14:12];
-    assign branch = (inst[6:0] == 7'b1100011); // BEQ
     always @(*) begin
         case (imm_type)
             3'b001: imm = {{20{inst[31]}}, inst[31:20]}; // I型
