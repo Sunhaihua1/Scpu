@@ -11,6 +11,7 @@ module regfile(
     output wire [31:0] rdata2
 );
     reg [31:0] regs [0:31];
+
     integer i; // 移到模块最外层
     // 读操作
     assign rdata1 = (rs1 != 0) ? regs[rs1] : 32'b0;

@@ -13,7 +13,7 @@ module cpu(
     wire [31:0] write_data;
     wire [4:0]  rs1, rs2, rd;
     wire        reg_write_en;
-    wire [2:0]  alu_op;
+    wire [3:0]  alu_op;    // 扩展到4位
     wire        mem_read, mem_write;
     wire [31:0] imm;
     wire branch;
@@ -33,6 +33,7 @@ module cpu(
     pc u_pc(
         .clk(clk),
         .rst(rst),
+        .pc_write(1'b1),  // 单周期CPU总是允许PC更新
         .next_pc(next_pc),
         .pc(pc)
     );
