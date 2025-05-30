@@ -59,10 +59,18 @@ always @(*) begin
             alu_op     = 4'b0000; // add
             imm_type   = 3'b010; // S型
         end
-        7'b1100011: begin // beq
+        7'b1100011: begin // 分支指令 (beq, bne, blt, bge, bltu, bgeu)
             branch     = 1;
-            alu_op     = 4'b1010; // beq 比较
             imm_type   = 3'b011; // B型
+            case (funct3)
+                3'b000: alu_op = 4'b1010; // beq
+                3'b001: alu_op = 4'b1011; // bne  
+                3'b100: alu_op = 4'b1100; // blt
+                3'b101: alu_op = 4'b1101; // bge
+                3'b110: alu_op = 4'b1110; // bltu
+                3'b111: alu_op = 4'b1111; // bgeu
+                default: alu_op = 4'b1010; // 默认为beq
+            endcase
         end
         default: ;
     endcase
