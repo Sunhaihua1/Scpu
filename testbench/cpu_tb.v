@@ -29,35 +29,77 @@ module cpu_tb;
         // 转储所有信号（包括寄存器数组）
         $dumpvars(0, cpu_tb);
         
-        // // 显式添加寄存器监控（用于终端显示）
-        // $monitor("时间: %0t | PC: %h | 指令: %h | x1: %h | x2: %h | x3: %h | x4: %h | x5: %h | x6: %h", 
-        //          $time, uut.pc, uut.inst, 
-        //          uut.u_regfile.regs[1], uut.u_regfile.regs[2], 
-        //          uut.u_regfile.regs[3], uut.u_regfile.regs[4],
-        //          uut.u_regfile.regs[5], uut.u_regfile.regs[6]);
+    #1000000; // 等待足够的时间让程序执行完成
 
-        #300;  // 增加仿真时间以执行更多指令
+    $display("\n=== 仿真结束 - 边界测试结果 ===");
+    $display("=== 算术边界测试 ===");
+    $display("x1 (最大正数):       0x%08x (%0d)", uut.u_regfile.regs[1], $signed(uut.u_regfile.regs[1]));
+    $display("x2 (溢出结果):       0x%08x (%0d)", uut.u_regfile.regs[2], $signed(uut.u_regfile.regs[2]));
+    $display("x3 (最小负数):       0x%08x (%0d)", uut.u_regfile.regs[3], $signed(uut.u_regfile.regs[3]));
+    $display("x4 (下溢结果):       0x%08x (%0d)", uut.u_regfile.regs[4], $signed(uut.u_regfile.regs[4]));
+    $display("x5 (零寄存器测试):   0x%08x (%0d)", uut.u_regfile.regs[5], $signed(uut.u_regfile.regs[5]));
+    $display("x6 (相同数相减):     0x%08x (%0d)", uut.u_regfile.regs[6], $signed(uut.u_regfile.regs[6]));
+    
+    $display("\n=== 移位边界测试 ===");
+    $display("x7 (基数1):          0x%08x (%0d)", uut.u_regfile.regs[7], $signed(uut.u_regfile.regs[7]));
+    $display("x8 (左移31位):       0x%08x (%0d)", uut.u_regfile.regs[8], $signed(uut.u_regfile.regs[8]));
+    $display("x9 (右移31位):       0x%08x (%0d)", uut.u_regfile.regs[9], $signed(uut.u_regfile.regs[9]));
+    $display("x10 (移位量33):      0x%08x (%0d)", uut.u_regfile.regs[10], $signed(uut.u_regfile.regs[10]));
+    $display("x11 (实际移位1位):   0x%08x (%0d)", uut.u_regfile.regs[11], $signed(uut.u_regfile.regs[11]));
+    $display("x12 (算术右移):      0x%08x (%0d)", uut.u_regfile.regs[12], $signed(uut.u_regfile.regs[12]));
+    
+    $display("\n=== 比较边界测试 ===");
+    $display("x13 (有符号<):       0x%08x (%0d)", uut.u_regfile.regs[13], $signed(uut.u_regfile.regs[13]));
+    $display("x14 (有符号>):       0x%08x (%0d)", uut.u_regfile.regs[14], $signed(uut.u_regfile.regs[14]));
+    $display("x15 (无符号<):       0x%08x (%0d)", uut.u_regfile.regs[15], $signed(uut.u_regfile.regs[15]));
+    $display("x16 (无符号>):       0x%08x (%0d)", uut.u_regfile.regs[16], $signed(uut.u_regfile.regs[16]));
+    
+    $display("\n=== 内存边界测试 ===");
+    $display("x17 (基地址):        0x%08x (%0d)", uut.u_regfile.regs[17], $signed(uut.u_regfile.regs[17]));
+    $display("x18 (字加载):        0x%08x (%0d)", uut.u_regfile.regs[18], $signed(uut.u_regfile.regs[18]));
+    $display("x19 (字节值255):     0x%08x (%0d)", uut.u_regfile.regs[19], $signed(uut.u_regfile.regs[19]));
+    $display("x20 (无符号字节):    0x%08x (%0d)", uut.u_regfile.regs[20], $signed(uut.u_regfile.regs[20]));
+    $display("x21 (有符号字节):    0x%08x (%0d)", uut.u_regfile.regs[21], $signed(uut.u_regfile.regs[21]));
+    $display("x22 (半字值-1):      0x%08x (%0d)", uut.u_regfile.regs[22], $signed(uut.u_regfile.regs[22]));
+    $display("x23 (无符号半字):    0x%08x (%0d)", uut.u_regfile.regs[23], $signed(uut.u_regfile.regs[23]));
+    $display("x24 (有符号半字):    0x%08x (%0d)", uut.u_regfile.regs[24], $signed(uut.u_regfile.regs[24]));
+    
+    $display("\n=== 分支跳转测试 ===");
+    $display("x25 (跳转检测):      0x%08x (%0d)", uut.u_regfile.regs[25], $signed(uut.u_regfile.regs[25]));
+    $display("x26 (JAL返回地址):   0x%08x (%0d)", uut.u_regfile.regs[26], $signed(uut.u_regfile.regs[26]));
+    $display("x27 (跳转目标):      0x%08x (%0d)", uut.u_regfile.regs[27], $signed(uut.u_regfile.regs[27]));
+    $display("x28 (JALR返回地址):  0x%08x (%0d)", uut.u_regfile.regs[28], $signed(uut.u_regfile.regs[28]));
+    
+    $display("\n=== 立即数边界测试 ===");
+    $display("x29 (12位最大正数):  0x%08x (%0d)", uut.u_regfile.regs[29], $signed(uut.u_regfile.regs[29]));
+    $display("x30 (12位最小负数):  0x%08x (%0d)", uut.u_regfile.regs[30], $signed(uut.u_regfile.regs[30]));
+    $display("x31 (20位全1):       0x%08x (%0d)", uut.u_regfile.regs[31], $signed(uut.u_regfile.regs[31]));
+    
+    $display("\n=== 内存状态检查 ===");
+    $display("内存[0] (存储测试):  0x%08x (%0d)", uut.u_dmem.ram[0], $signed(uut.u_dmem.ram[0]));
+    $display("内存[1] (字节测试):  0x%08x (%0d)", uut.u_dmem.ram[1], $signed(uut.u_dmem.ram[1]));
+    $display("内存[2] (半字测试):  0x%08x (%0d)", uut.u_dmem.ram[2], $signed(uut.u_dmem.ram[2]));
+    
+    // 验证测试结果
+    $display("\n=== 测试验证 ===");
+    if (uut.u_regfile.regs[25] == 0) 
+        $display("✅ 分支跳转测试通过！");
+    else 
+        $display("❌ 分支跳转测试失败，x25 = %0d", uut.u_regfile.regs[25]);
         
-        // 显示最终结果
-        $display("\n=== 仿真结束 - 所有R型指令测试结果 ===");
-        $display("x1 (初始值 5):     %0d", uut.u_regfile.regs[1]);
-        $display("x2 (初始值 2):     %0d", uut.u_regfile.regs[2]);
-        $display("x3 (ADD 5+2):      %0d", uut.u_regfile.regs[3]);
-        $display("x4 (SUB 2-5):      %0d", uut.u_regfile.regs[4]);
-        $display("x5 (OR 5|2):       %0d", uut.u_regfile.regs[5]);
-        $display("x6 (AND 5&2):      %0d", uut.u_regfile.regs[6]);
-        $display("x7 (XOR 5^2):      %0d", uut.u_regfile.regs[7]);
-        $display("x8 (SLL 5<<2):     %0d", uut.u_regfile.regs[8]);
-        $display("x9 (SRL 5>>2):     %0d", uut.u_regfile.regs[9]);
-        $display("x10 (SRA 5>>>2):   %0d", uut.u_regfile.regs[10]);
-        $display("x11 (SLT 5<2):     %0d", uut.u_regfile.regs[11]);
-        $display("x12 (SLTU 5<2):    %0d", uut.u_regfile.regs[12]);
-        $display("x13 (LW from mem): %0d", uut.u_regfile.regs[13]);
-        $display("x14 (分支结果):    %0d", uut.u_regfile.regs[14]);
-        $display("\n✅ 所有R型指令测试完成!");
+    if (uut.u_regfile.regs[1] == 32'h7fffffff)
+        $display("✅ 最大正数测试通过！");
+    else
+        $display("❌ 最大正数测试失败");
         
-        $finish;
-    end
+    if (uut.u_regfile.regs[2] == 32'h80000000)
+        $display("✅ 溢出测试通过！");
+    else
+        $display("❌ 溢出测试失败");
+    
+    $display("\n✅ 边界测试程序执行完成!");
+    $finish;
+   end
 
     // 每20ns显示所有非零寄存器的状态
     always @(posedge clk) begin

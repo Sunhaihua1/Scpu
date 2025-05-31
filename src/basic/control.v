@@ -10,7 +10,12 @@ module control(
     output reg        mem_write,
     output reg        alu_src,
     output reg        reg_write,
-    output reg [2:0]  imm_type
+    output reg [2:0]  imm_type,
+    // 新增信号
+    output reg        jump,        // 跳转信号
+    output reg        jalr,        // JALR指令信号  
+    output reg [1:0]  mem_size,    // 内存访问大小：00=byte, 01=half, 10=word
+    output reg        mem_unsigned // 无符号加载
 );
 
 always @(*) begin
@@ -23,6 +28,10 @@ always @(*) begin
     alu_src    = 0;
     reg_write  = 0;
     imm_type   = 3'b000;
+    jump       = 0;
+    jalr       = 0;
+    mem_size   = 2'b10;  // 默认字访问
+    mem_unsigned = 0;
 
     case (opcode)
         7'b0110011: begin // R型指令
@@ -64,19 +73,33 @@ always @(*) begin
                 default: alu_op = 4'b0000;
             endcase
         end
-        7'b0000011: begin // lw
+        7'b0000011: begin // 加载指令 (lb, lh, lw, lbu, lhu)
             alu_src    = 1;
             reg_write  = 1;
             mem_to_reg = 1;
             mem_read   = 1;
-            alu_op     = 4'b0000; // add for address calculation
+            alu_op     = 4'b0000; // 地址计算
             imm_type   = 3'b001; // I型
+            
+            case (funct3)
+                3'b000: begin mem_size = 2'b00; mem_unsigned = 0; end // lb
+                3'b001: begin mem_size = 2'b01; mem_unsigned = 0; end // lh
+                3'b010: begin mem_size = 2'b10; mem_unsigned = 0; end // lw
+                3'b100: begin mem_size = 2'b00; mem_unsigned = 1; end // lbu
+                3'b101: begin mem_size = 2'b01; mem_unsigned = 1; end // lhu
+            endcase
         end
-        7'b0100011: begin // sw
+        7'b0100011: begin // 存储指令 (sb, sh, sw)
             alu_src    = 1;
             mem_write  = 1;
-            alu_op     = 4'b0000; // add
+            alu_op     = 4'b0000; // 地址计算
             imm_type   = 3'b010; // S型
+            
+            case (funct3)
+                3'b000: mem_size = 2'b00; // sb
+                3'b001: mem_size = 2'b01; // sh
+                3'b010: mem_size = 2'b10; // sw
+            endcase
         end
         7'b1100011: begin // 分支指令 (beq, bne, blt, bge, bltu, bgeu)
             branch     = 1;
@@ -91,8 +114,35 @@ always @(*) begin
                 default: alu_op = 4'b1010; // 默认为beq
             endcase
         end
+        7'b0110111: begin // LUI
+            reg_write  = 1;
+            alu_src    = 1;
+            alu_op     = 4'b0000; // 直接传递立即数
+            imm_type   = 3'b100; // U型
+        end
+        7'b0010111: begin // AUIPC
+            reg_write  = 1;
+            alu_src    = 1;
+            alu_op     = 4'b0000; // PC + imm
+            imm_type   = 3'b100; // U型
+        end
+        7'b1101111: begin // JAL
+            reg_write  = 1;
+            jump       = 1;
+            imm_type   = 3'b101; // J型
+        end
+        7'b1100111: begin // JALR
+            reg_write  = 1;
+            alu_src    = 1;
+            jalr       = 1;
+            alu_op     = 4'b0000; // rs1 + imm
+            imm_type   = 3'b001; // I型
+        end
+        7'b0001111: begin // FENCE
+            // FENCE指令在简单实现中可以是NOP
+        end
         default: ;
     endcase
 end
 
-endmodule 
+endmodule

@@ -8,7 +8,7 @@ module fibonacci_tb;
     // 斐波那契数列专用CPU实例 (使用单周期CPU)
     cpu_fibonacci cpu_fib(
         .clk(clk),
-        .reset(reset)
+        .rst(reset)
     );
 
     // 时钟生成
@@ -59,12 +59,12 @@ module fibonacci_tb;
             // 检测PC是否稳定在某个值（死循环）
             while (stable_count < 10) begin
                 #10;
-                if (cpu_fib.pc_module.pc == prev_pc && prev_pc == 100) begin // rom[25] = 地址100
+                if (cpu_fib.u_pc.pc == prev_pc && prev_pc == 104) begin // rom[26] = 地址104的死循环
                     stable_count = stable_count + 1;
                 end else begin
                     stable_count = 0;
                 end
-                prev_pc = cpu_fib.pc_module.pc;
+                prev_pc = cpu_fib.u_pc.pc;
                 
                 // 防止无限等待
                 if ($time > 10000) begin
@@ -82,28 +82,28 @@ module fibonacci_tb;
         begin
             $display("\n=== 斐波那契数列计算结果 ===");
             $display("从寄存器读取结果：");
-            $display("fib(0) = %0d (寄存器x15)", cpu_fib.regfile_module.regs[15]);
-            $display("fib(1) = %0d (寄存器x16)", cpu_fib.regfile_module.regs[16]);
-            $display("fib(2) = %0d (寄存器x17)", cpu_fib.regfile_module.regs[17]);
-            $display("fib(3) = %0d (寄存器x18)", cpu_fib.regfile_module.regs[18]);
-            $display("fib(4) = %0d (寄存器x19)", cpu_fib.regfile_module.regs[19]);
-            $display("fib(5) = %0d (寄存器x20)", cpu_fib.regfile_module.regs[20]);
-            $display("fib(6) = %0d (寄存器x21)", cpu_fib.regfile_module.regs[21]);
-            $display("fib(7) = %0d (寄存器x22)", cpu_fib.regfile_module.regs[22]);
-            $display("fib(8) = %0d (寄存器x23)", cpu_fib.regfile_module.regs[23]);
-            $display("fib(9) = %0d (寄存器x24)", cpu_fib.regfile_module.regs[24]);
+            $display("fib(0) = %0d (寄存器x15)", cpu_fib.u_regfile.regs[15]);
+            $display("fib(1) = %0d (寄存器x16)", cpu_fib.u_regfile.regs[16]);
+            $display("fib(2) = %0d (寄存器x17)", cpu_fib.u_regfile.regs[17]);
+            $display("fib(3) = %0d (寄存器x18)", cpu_fib.u_regfile.regs[18]);
+            $display("fib(4) = %0d (寄存器x19)", cpu_fib.u_regfile.regs[19]);
+            $display("fib(5) = %0d (寄存器x20)", cpu_fib.u_regfile.regs[20]);
+            $display("fib(6) = %0d (寄存器x21)", cpu_fib.u_regfile.regs[21]);
+            $display("fib(7) = %0d (寄存器x22)", cpu_fib.u_regfile.regs[22]);
+            $display("fib(8) = %0d (寄存器x23)", cpu_fib.u_regfile.regs[23]);
+            $display("fib(9) = %0d (寄存器x24)", cpu_fib.u_regfile.regs[24]);
             
             $display("\n从内存读取结果验证：");
-            $display("fib(0) = %0d (内存地址0)", cpu_fib.dmem_module.ram[0]);
-            $display("fib(1) = %0d (内存地址4)", cpu_fib.dmem_module.ram[1]);
-            $display("fib(2) = %0d (内存地址8)", cpu_fib.dmem_module.ram[2]);
-            $display("fib(3) = %0d (内存地址12)", cpu_fib.dmem_module.ram[3]);
-            $display("fib(4) = %0d (内存地址16)", cpu_fib.dmem_module.ram[4]);
-            $display("fib(5) = %0d (内存地址20)", cpu_fib.dmem_module.ram[5]);
-            $display("fib(6) = %0d (内存地址24)", cpu_fib.dmem_module.ram[6]);
-            $display("fib(7) = %0d (内存地址28)", cpu_fib.dmem_module.ram[7]);
-            $display("fib(8) = %0d (内存地址32)", cpu_fib.dmem_module.ram[8]);
-            $display("fib(9) = %0d (内存地址36)", cpu_fib.dmem_module.ram[9]);
+            $display("fib(0) = %0d (内存地址0)", cpu_fib.u_dmem.ram[0]);
+            $display("fib(1) = %0d (内存地址4)", cpu_fib.u_dmem.ram[1]);
+            $display("fib(2) = %0d (内存地址8)", cpu_fib.u_dmem.ram[2]);
+            $display("fib(3) = %0d (内存地址12)", cpu_fib.u_dmem.ram[3]);
+            $display("fib(4) = %0d (内存地址16)", cpu_fib.u_dmem.ram[4]);
+            $display("fib(5) = %0d (内存地址20)", cpu_fib.u_dmem.ram[5]);
+            $display("fib(6) = %0d (内存地址24)", cpu_fib.u_dmem.ram[6]);
+            $display("fib(7) = %0d (内存地址28)", cpu_fib.u_dmem.ram[7]);
+            $display("fib(8) = %0d (内存地址32)", cpu_fib.u_dmem.ram[8]);
+            $display("fib(9) = %0d (内存地址36)", cpu_fib.u_dmem.ram[9]);
             
             // 验证结果正确性
             verify_fibonacci_results();
@@ -132,12 +132,12 @@ module fibonacci_tb;
             errors = 0;
             
             for (i = 0; i < 10; i = i + 1) begin
-                if (cpu_fib.dmem_module.ram[i] != expected_fib[i]) begin
+                if (cpu_fib.u_dmem.ram[i] != expected_fib[i]) begin
                     $display("❌ fib(%0d): 期望=%0d, 实际=%0d", 
-                             i, expected_fib[i], cpu_fib.dmem_module.ram[i]);
+                             i, expected_fib[i], cpu_fib.u_dmem.ram[i]);
                     errors = errors + 1;
                 end else begin
-                    $display("✅ fib(%0d): %0d", i, cpu_fib.dmem_module.ram[i]);
+                    $display("✅ fib(%0d): %0d", i, cpu_fib.u_dmem.ram[i]);
                 end
             end
             
@@ -152,18 +152,38 @@ module fibonacci_tb;
     // 监控关键指令执行
     always @(posedge clk) begin
         if (!reset) begin
-            // 监控循环控制
-            if (cpu_fib.pc_module.pc == 32) begin  // rom[8] - 循环开始
-                $display("时间 %0t: 开始计算 fib(%0d), 当前 fib(n-2)=%0d, fib(n-1)=%0d", 
-                         $time, cpu_fib.regfile_module.regs[4], 
-                         cpu_fib.regfile_module.regs[1], cpu_fib.regfile_module.regs[2]);
+            // 监控BGE指令
+            if (cpu_fib.u_pc.pc == 28) begin  // rom[7] - 循环开始的bge指令
+                $display("时间 %0t: BGE检查 x10=%0d >= x11=%0d ? branch_taken=%b, alu_result=0x%08x", 
+                         $time, cpu_fib.u_regfile.regs[10], 
+                         cpu_fib.u_regfile.regs[11],
+                         cpu_fib.branch_taken,
+                         cpu_fib.alu_result);
+            end
+            
+            if (cpu_fib.u_pc.pc == 32) begin  // rom[8] - 加法指令
+                $display("时间 %0t: 计算 fib(%0d), F(n-2)=%0d + F(n-1)=%0d", 
+                         $time, cpu_fib.u_regfile.regs[10], 
+                         cpu_fib.u_regfile.regs[15], cpu_fib.u_regfile.regs[16]);
             end
             
             // 监控存储操作
-            if (cpu_fib.control_module.mem_write && cpu_fib.regfile_module.regs[4] <= 9) begin
+            if (cpu_fib.u_control.mem_write && cpu_fib.u_regfile.regs[10] <= 9) begin
                 $display("时间 %0t: 存储 fib(%0d) = %0d 到地址 %0d", 
-                         $time, cpu_fib.regfile_module.regs[4], 
-                         cpu_fib.alu_module.result, cpu_fib.alu_module.result);
+                         $time, cpu_fib.u_regfile.regs[10], 
+                         cpu_fib.u_regfile.regs[17], 
+                         cpu_fib.u_regfile.regs[13]);
+            end
+            
+            // 监控加载操作
+            if (cpu_fib.u_pc.pc >= 64 && cpu_fib.u_pc.pc <= 100) begin
+                $display("时间 %0t: 执行加载指令 PC=%0d, inst=0x%08x", 
+                         $time, cpu_fib.u_pc.pc, cpu_fib.inst);
+            end
+            
+            // 监控PC变化
+            if (cpu_fib.u_pc.pc == 60) begin  // 应该跳转到的结束部分
+                $display("时间 %0t: 到达结束部分 PC=%0d", $time, cpu_fib.u_pc.pc);
             end
         end
     end

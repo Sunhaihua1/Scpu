@@ -18,8 +18,8 @@ module alu(
             4'b0111: result = $signed(a) >>> b[4:0];    // SRA (shift right arithmetic)
             4'b1000: result = ($signed(a) < $signed(b)) ? 32'b1 : 32'b0;  // SLT
             4'b1001: result = (a < b) ? 32'b1 : 32'b0;  // SLTU
-            4'b1010: result = a - b;                    // BEQ比较
-            4'b1011: result = a - b;                    // BNE比较  
+            4'b1010: result = (a == b) ? 32'b1 : 32'b0; // BEQ比较
+            4'b1011: result = (a != b) ? 32'b1 : 32'b0; // BNE比较  
             4'b1100: result = ($signed(a) < $signed(b)) ? 32'b1 : 32'b0;  // BLT
             4'b1101: result = ($signed(a) >= $signed(b)) ? 32'b1 : 32'b0; // BGE
             4'b1110: result = (a < b) ? 32'b1 : 32'b0;  // BLTU
@@ -27,5 +27,5 @@ module alu(
             default: result = 32'b0;
         endcase
     end
-    assign zero = (result == 32'b0);
+    assign zero = !result[0];
 endmodule 

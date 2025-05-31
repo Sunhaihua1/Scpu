@@ -20,7 +20,37 @@ module cpu(
     wire [2:0] imm_type;
     wire [31:0] next_pc;
     wire zero;
-    assign next_pc = (branch && zero) ? (pc + imm) : (pc + 4);
+    
+    // 新增控制信号
+    wire jump, jalr;
+    wire [1:0] mem_size;
+    wire mem_unsigned;
+    
+    // PC计算逻辑
+    wire [31:0] pc_plus4 = pc + 4;
+    wire [31:0] pc_branch = pc + imm;
+    wire [31:0] pc_jump = pc + imm;  // JAL
+    wire [31:0] pc_jalr = (alu_result & ~1); // JALR: (rs1+imm) & ~1
+    
+    // 分支条件判断逻辑
+    reg branch_condition;
+    always @(*) begin
+        case (funct3)
+            3'b000: branch_condition = alu_result[0];  // BEQ: ALU输出1时跳转
+            3'b001: branch_condition = alu_result[0];  // BNE: ALU输出1时跳转
+            3'b100: branch_condition = alu_result[0];  // BLT: 小于时跳转
+            3'b101: branch_condition = alu_result[0];  // BGE: 大于等于时跳转
+            3'b110: branch_condition = alu_result[0];  // BLTU: 无符号小于时跳转
+            3'b111: branch_condition = alu_result[0];  // BGEU: 无符号大于等于时跳转
+            default: branch_condition = 1'b0;
+        endcase
+    end
+    wire branch_taken = branch && branch_condition;
+    
+    assign next_pc = jump ? pc_jump :
+                    jalr ? pc_jalr :
+                    branch_taken ? pc_branch :
+                    pc_plus4;
 
     // 解析指令字段
     wire [6:0] opcode = inst[6:0];
@@ -52,7 +82,11 @@ module cpu(
         .mem_write(mem_write),
         .alu_src(alu_src),
         .reg_write(reg_write),
-        .imm_type(imm_type)
+        .imm_type(imm_type),
+        .jump(jump),
+        .jalr(jalr),
+        .mem_size(mem_size),
+        .mem_unsigned(mem_unsigned)
     );
     decoder u_decoder(
         .inst(inst),
@@ -63,10 +97,11 @@ module cpu(
         .imm(imm)
     );
     // ALU第二输入选择
+    wire [31:0] alu_a = (opcode == 7'b0010111) ? pc : reg1_data; // AUIPC使用PC
     wire [31:0] alu_b = alu_src ? imm : reg2_data;
     alu u_alu(
         .op(alu_op),
-        .a(reg1_data),
+        .a(alu_a),
         .b(alu_b),
         .result(alu_result),
         .zero(zero)
@@ -77,10 +112,14 @@ module cpu(
         .wdata(reg2_data),
         .rdata(mem_data),
         .mem_read(mem_read),
-        .mem_write(mem_write)
+        .mem_write(mem_write),
+        .mem_size(mem_size),
+        .mem_unsigned(mem_unsigned)
     );
-    // 写回数据选择
-    assign write_data = mem_to_reg ? mem_data : alu_result;
+    // 写回数据选择 - 支持JAL/JALR的PC+4写回
+    wire [31:0] pc_plus4_writeback = pc + 4;
+    assign write_data = (jump || jalr) ? pc_plus4_writeback :
+                       mem_to_reg ? mem_data : alu_result;
     // regfile写使能
     regfile u_regfile(
         .clk(clk),
