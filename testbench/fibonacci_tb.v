@@ -19,7 +19,7 @@ module fibonacci_tb;
 
     // 生成VCD文件
     initial begin
-        $dumpfile("fibonacci.vcd");
+        $dumpfile("output/fibonacci_tb.vcd");
         $dumpvars(0, fibonacci_tb);
     end
 

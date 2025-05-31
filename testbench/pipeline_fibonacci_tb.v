@@ -18,7 +18,7 @@ module pipeline_fibonacci_tb;
     
     // 主测试流程
     initial begin
-        $dumpfile("pipeline_fibonacci.vcd");
+        $dumpfile("output/pipeline_fibonacci_tb.vcd");
         $dumpvars(0, pipeline_fibonacci_tb);
         
         // 初始化
