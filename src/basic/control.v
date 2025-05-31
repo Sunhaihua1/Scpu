@@ -44,13 +44,32 @@ always @(*) begin
                 default: alu_op = 4'b0000;
             endcase
         end
-        7'b0010011, // I型（如 addi, ori）
+        7'b0010011: begin // I型指令（addi, ori, slli等）
+            alu_src    = 1;
+            reg_write  = 1;
+            mem_to_reg = 0;
+            mem_read   = 0;
+            imm_type   = 3'b001; // I型
+            
+            // 根据funct3确定ALU操作
+            case (funct3)
+                3'b000: alu_op = 4'b0000; // addi
+                3'b001: alu_op = 4'b0101; // slli
+                3'b010: alu_op = 4'b1000; // slti
+                3'b011: alu_op = 4'b1001; // sltiu
+                3'b100: alu_op = 4'b0100; // xori
+                3'b101: alu_op = (funct7 == 7'b0100000) ? 4'b0111 : 4'b0110; // srai : srli
+                3'b110: alu_op = 4'b0011; // ori
+                3'b111: alu_op = 4'b0010; // andi
+                default: alu_op = 4'b0000;
+            endcase
+        end
         7'b0000011: begin // lw
             alu_src    = 1;
             reg_write  = 1;
-            mem_to_reg = (opcode == 7'b0000011);
-            mem_read   = (opcode == 7'b0000011);
-            alu_op     = (funct3 == 3'b110) ? 4'b0011 : 4'b0000; // ori/addi/lw
+            mem_to_reg = 1;
+            mem_read   = 1;
+            alu_op     = 4'b0000; // add for address calculation
             imm_type   = 3'b001; // I型
         end
         7'b0100011: begin // sw
