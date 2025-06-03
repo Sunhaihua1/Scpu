@@ -25,7 +25,7 @@ module cpu_tb;
     end
 
     initial begin
-        $dumpfile("cpu_tb.vcd");
+        $dumpfile("output/cpu_tb.vcd");
         // 转储所有信号（包括寄存器数组）
         $dumpvars(0, cpu_tb);
         
