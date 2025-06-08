@@ -87,6 +87,7 @@ always @(*) begin
                 3'b010: begin mem_size = 2'b10; mem_unsigned = 0; end // lw
                 3'b100: begin mem_size = 2'b00; mem_unsigned = 1; end // lbu
                 3'b101: begin mem_size = 2'b01; mem_unsigned = 1; end // lhu
+                default: begin mem_size = 2'b10; mem_unsigned = 0; end // 默认为lw
             endcase
         end
         7'b0100011: begin // 存储指令 (sb, sh, sw)
@@ -99,6 +100,7 @@ always @(*) begin
                 3'b000: mem_size = 2'b00; // sb
                 3'b001: mem_size = 2'b01; // sh
                 3'b010: mem_size = 2'b10; // sw
+                default: mem_size = 2'b10; // 默认为sw
             endcase
         end
         7'b1100011: begin // 分支指令 (beq, bne, blt, bge, bltu, bgeu)
