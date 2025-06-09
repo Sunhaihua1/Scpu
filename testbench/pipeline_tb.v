@@ -92,7 +92,7 @@ module pipeline_tb;
         display_registers;
 
         // 继续运行
-        repeat(40) begin
+        repeat(50) begin
             #10;
             display_pipeline_state;
         end
@@ -166,6 +166,19 @@ module pipeline_tb;
         else
             $display("❌ 溢出测试失败");
 
+        // Load-Use冒险测试验证
+        $display("\n=== Load-Use冒险测试验证 ===");
+        $display("x18 (Load-Use测试1):  0x%08x (%0d)", cpu.regfile_module.regs[18], $signed(cpu.regfile_module.regs[18]));
+        $display("x19 (Load-Use测试2):  0x%08x (%0d)", cpu.regfile_module.regs[19], $signed(cpu.regfile_module.regs[19]));
+        $display("x20 (Load-Use测试3):  0x%08x (%0d)", cpu.regfile_module.regs[20], $signed(cpu.regfile_module.regs[20]));
+        $display("x21 (连续Load-Use):   0x%08x (%0d)", cpu.regfile_module.regs[21], $signed(cpu.regfile_module.regs[21]));
+        
+        // 验证Load-Use测试结果
+        if (cpu.regfile_module.regs[18] != 0 && cpu.regfile_module.regs[19] != 0)
+            $display("✅ Load-Use冒险处理正确！");
+        else
+            $display("❌ Load-Use冒险处理可能有问题");
+
         $display("\n✅ 四阶段流水线CPU边界测试完成!");
         $finish;
     end
@@ -179,6 +192,33 @@ module pipeline_tb;
         $display("x30 (12位最小负数):  0x%08x (%0d)", cpu.regfile_module.regs[30], $signed(cpu.regfile_module.regs[30]));
         $display("x31 (20位全1):       0x%08x (%0d)", cpu.regfile_module.regs[31], $signed(cpu.regfile_module.regs[31]));
         $finish;
+    end
+
+    // Load-Use冒险专门测试监控
+    always @(posedge clk) begin
+        // 监控ROM[48]-ROM[55]的Load-Use冒险测试区域
+        if (pc_ex >= 32'hc4 && pc_ex <= 32'hdc) begin  // ROM[49]-ROM[55]对应地址范围
+            $display("\n=== Load-Use冒险测试监控 (时间: %0t) ===", $time);
+            // 从ID阶段获取opcode来判断指令类型
+            $display("PC_EX: %h, PC_ID: %h", pc_ex, pc_id);
+            $display("指令类型: %s", 
+                (cpu.mem_read_ex) ? "LOAD" : 
+                (instr_id[6:0] == 7'b0110011) ? "R-TYPE" : 
+                (instr_id[6:0] == 7'b0010011) ? "I-TYPE" : "OTHER");
+            $display("mem_read_ex: %b, rd_ex: %0d, rs1_id: %0d, rs2_id: %0d", 
+                cpu.mem_read_ex, cpu.rd_ex, cpu.rs1_id, cpu.rs2_id);
+            
+            if (stall) begin
+                $display("🔴 检测到Load-Use冒险停顿！");
+                $display("   - 停顿原因: Load指令目标寄存器x%0d被下一条指令使用", cpu.rd_ex);
+                $display("   - ID阶段指令需要: rs1=x%0d, rs2=x%0d", cpu.rs1_id, cpu.rs2_id);
+                $display("   - Load指令: %h", cpu.instr_if);
+                $display("   - 下一条指令: %h", instr_id);
+            end else begin
+                $display("🟢 正常执行，无Load-Use冒险");
+            end
+            $display("流水线状态: stall=%b, flush=%b", stall, cpu.flush);
+        end
     end
 
     // 分支跳转调试

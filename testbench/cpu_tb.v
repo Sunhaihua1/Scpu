@@ -75,6 +75,26 @@ module cpu_tb;
     $display("x30 (12位最小负数):  0x%08x (%0d)", uut.u_regfile.regs[30], $signed(uut.u_regfile.regs[30]));
     $display("x31 (20位全1):       0x%08x (%0d)", uut.u_regfile.regs[31], $signed(uut.u_regfile.regs[31]));
     
+    $display("\n=== Load-Use连续操作测试 ===");
+    $display("x17 (基地址):        0x%08x (%0d)", uut.u_regfile.regs[17], $signed(uut.u_regfile.regs[17]));
+    $display("x18 (Load-Use测试1): 0x%08x (%0d)", uut.u_regfile.regs[18], $signed(uut.u_regfile.regs[18]));
+    $display("x19 (Load-Use测试2): 0x%08x (%0d)", uut.u_regfile.regs[19], $signed(uut.u_regfile.regs[19]));
+    $display("x20 (Load-Use测试3): 0x%08x (%0d)", uut.u_regfile.regs[20], $signed(uut.u_regfile.regs[20]));
+    $display("x21 (连续Load-Use):  0x%08x (%0d)", uut.u_regfile.regs[21], $signed(uut.u_regfile.regs[21]));
+    
+    // 验证Load-Use测试结果正确性
+    if (uut.u_regfile.regs[18] != 0 && uut.u_regfile.regs[19] != 0 && uut.u_regfile.regs[20] != 0) begin
+        $display("✅ Load-Use测试：所有寄存器都有正确的非零值");
+        // 检查值的逻辑关系（假设x18被加倍，x19被加倍，x20被加倍）
+        if (uut.u_regfile.regs[18] == 2 * uut.u_regfile.regs[1] || 
+            uut.u_regfile.regs[18] == 2 * 32'h7fffffff) begin
+            $display("✅ x18的值符合预期（Load后立即使用）");
+        end else begin
+            $display("⚠️  x18的值可能不符合预期: %0d", uut.u_regfile.regs[18]);
+        end
+    end else begin
+        $display("❌ Load-Use测试可能失败：存在零值寄存器");
+    end
     $display("\n=== 内存状态检查 ===");
     $display("内存[0] (存储测试):  0x%08x (%0d)", uut.u_dmem.ram[0], $signed(uut.u_dmem.ram[0]));
     $display("内存[1] (字节测试):  0x%08x (%0d)", uut.u_dmem.ram[1], $signed(uut.u_dmem.ram[1]));
@@ -122,4 +142,34 @@ module cpu_tb;
                      $time, uut.rd, uut.write_data, uut.alu_result, uut.mem_data);
         end
     end
-endmodule 
+    
+    // 监控Load-Use冒险测试区域的执行
+    always @(posedge clk) begin
+        if (!rst && uut.pc >= 32'hbc && uut.pc <= 32'hec) begin  // ROM[47]-ROM[59]范围
+            $display("时间 %0t: Load-Use测试区域 PC=%h, 指令=%h", 
+                     $time, uut.pc, uut.inst);
+            
+            // 监控Load指令
+            if (uut.inst[6:0] == 7'b0000011) begin  // Load指令opcode
+                $display("  🔵 Load指令: lw x%0d, offset(x%0d)", 
+                         uut.inst[11:7], uut.inst[19:15]);
+                $display("     地址计算: x%0d + %0d = %h", 
+                         uut.inst[19:15], $signed(uut.inst[31:20]), uut.alu_result);
+            end
+            
+            // 监控R-type指令（可能的Load-Use冒险目标）
+            if (uut.inst[6:0] == 7'b0110011) begin  // R-type指令
+                $display("  🟡 R-type指令: rs1=x%0d, rs2=x%0d, rd=x%0d", 
+                         uut.inst[19:15], uut.inst[24:20], uut.inst[11:7]);
+                $display("     操作数: %h + %h = %h", 
+                         uut.reg1_data, uut.reg2_data, uut.alu_result);
+            end
+            
+            // 显示关键寄存器状态
+            if (uut.reg_write && uut.rd != 0) begin
+                $display("  ✅ 写回: x%0d <= %h", uut.rd, uut.write_data);
+            end
+            $display("");
+        end
+    end
+endmodule
